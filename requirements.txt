@@ -1,0 +1,11 @@
+# Core — Music_Analyse (native tkinter UI; no Gradio)
+numpy==2.4.6
+scipy==1.18.0
+librosa==0.11.0
+numba==0.66.0
+audioread==3.1.0
+sounddevice==0.5.5
+soundfile==0.14.0
+python-osc==1.10.2
+mido==1.3.3
+python-rtmidi==1.5.8
