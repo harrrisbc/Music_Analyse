@@ -19,6 +19,7 @@ updates:
   - docs/briefs/programming-agent-update-tap-tempo.md
   - docs/briefs/programming-agent-update-extractors.md
   - docs/briefs/programming-agent-update-session-show.md
+  - docs/briefs/programming-agent-update-windows.md
 ---
 
 # Programming brief — Full (Python-only UI)
@@ -36,6 +37,7 @@ This is the **single source of truth** for the baseline app. Older Day 1 briefs 
 - [`programming-agent-update-tap-tempo.md`](./programming-agent-update-tap-tempo.md) — user TAP button sets BPM + beat phase
 - [`programming-agent-update-extractors.md`](./programming-agent-update-extractors.md) — Filters (IIR) + Stems, both in Live and Pro
 - [`programming-agent-update-session-show.md`](./programming-agent-update-session-show.md) — last-used → named Session → Show view
+- [`programming-agent-update-windows.md`](./programming-agent-update-windows.md) — Windows setup + loopMIDI (virtual MIDI fallback)
 
 **Critical UI change:** replace the **Gradio / HTML server** control panel with a **native Python GUI only**. No local web server for the app UI.
 

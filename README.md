@@ -6,20 +6,44 @@ UI: **tkinter** (stdlib) — native window, **no browser / Gradio**.
 
 ## Setup
 
+Needs **Python 3.11 or 3.12** (3.14 may work on Mac; on Windows prefer 3.12).  
+Works on **macOS and Windows**. TouchDesigner talks to it over OSC the same way on both.
+
+### macOS
+
 ```bash
-cd /Users/haha/Music_Analyse
+cd /path/to/Music_Analyse
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-```
-
-## Run
-
-```bash
-source .venv/bin/activate
 python main.py
 ```
 
+### Windows
+
+```bat
+cd C:\path\to\Music_Analyse
+py -3.12 -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+python main.py
+```
+
+If `python-rtmidi` fails to install, install [Build Tools for Visual Studio](https://visualstudio.microsoft.com/visual-cpp-build-tools/) or use Python 3.12 so a wheel exists.
+
 Opens a desktop window (not a URL).
+
+### Windows MIDI
+
+macOS can create a virtual port named **`Music Analyse`**. **Windows usually cannot.**  
+The app tries `virtual=True` first; if that fails it opens the **same name** as a normal output (loopMIDI). MIDI failure never stops the app — Status shows `MIDI: …` and **OSC keeps running**.
+
+1. Install [loopMIDI](https://www.tobias-erichsen.de/software/loopmidi.html)
+2. Create a port named **`Music Analyse`** (or any name, then pick it after Refresh)
+3. In this app: Outputs → MIDI on. If the name matches, no extra pick needed
+4. In TouchDesigner / DAW, open the same loopMIDI port
+
+OSC does **not** need loopMIDI — `127.0.0.1:8000` is enough for TD. Toggle MIDI off if you only use OSC.
 
 **Mute defaults ON** — File playback speakers are silenced; analysis + OSC/MIDI + meters still run. Unmute in Transport when you want to hear the file. Live mode has no speaker monitor (Mute is a no-op there).
 
@@ -219,8 +243,8 @@ Bank presets (**Kick-ish / Snare-ish / Hat-ish / Reset**) only write Hz / thresh
 
 ## MIDI map
 
-Virtual port: **`Music Analyse`** (default). Toggle off in UI if unused.  
-Hardware ports are listed only when you click **Refresh** (probed in a subprocess — CoreMIDI/rtmidi can abort the main process if enumerated at launch).
+Port **`Music Analyse`** (default): virtual on **macOS**; on **Windows** the same name must exist in **loopMIDI** (virtual open fails → retry as a normal port). Toggle MIDI off if unused.  
+Hardware / loopMIDI ports are listed only when you click **Refresh** (probed in a subprocess — CoreMIDI/rtmidi can abort the main process if enumerated at launch on Mac).
 
 | Signal | MIDI |
 |--------|------|
@@ -244,8 +268,8 @@ Switching views does **not** stop the engine or reset knobs.
 
 ## Session + last-used
 
-- **Last-used** (automatic): `~/.music_analyse/last_used.json` — written on quit (and ~1.5 s after Tune/Banks/etc). Restored on launch. Missing or corrupt → factory defaults, no modal. **Never auto-Starts.**
-- **Named session**: Setup → `Session: [ Save… ] [ Load… ]`. Files are `*.ma.json` (default `show.ma.json` in `~/Documents`). Same JSON schema as last-used. Save does **not** replace last-used; quit still writes last-used. Load applies immediately (restart analyser only if Mode / Extract / device / file requires it).
+- **Last-used** (automatic): `~/.music_analyse/last_used.json` (Windows: `C:\Users\<you>\.music_analyse\last_used.json`) — written on quit (and ~1.5 s after Tune/Banks/etc). Restored on launch. Missing or corrupt → factory defaults, no modal. **Never auto-Starts.**
+- **Named session**: Setup → `Session: [ Save… ] [ Load… ]`. Files are `*.ma.json` (default `show.ma.json` in `Documents`). Same JSON schema as last-used. Save does **not** replace last-used; quit still writes last-used. Load applies immediately (restart analyser only if Mode / Extract / device / file requires it).
 - Schema `version: 1` — unknown keys ignored; missing keys use defaults. No audio files inside the JSON.
 
 ## UI layout

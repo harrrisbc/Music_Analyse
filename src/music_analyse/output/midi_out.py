@@ -63,7 +63,12 @@ class MidiOutput:
         self._port: Any = None
         self._lock = threading.Lock()
         if enabled:
-            self.open()
+            try:
+                self.open()
+            except Exception:
+                # Never crash app startup — OSC must still run.
+                self.enabled = False
+                self._port = None
 
     def open(self) -> None:
         """Open MIDI out. Never enumerate ports here — listing can abort on macOS."""
@@ -71,13 +76,27 @@ class MidiOutput:
         if not self.enabled:
             return
         try:
-            if self.port_name == config.MIDI_PORT_NAME:
-                self._port = mido.open_output(self.port_name, virtual=True)
-            else:
-                self._port = mido.open_output(self.port_name)
+            self._port = self._open_named(self.port_name)
         except Exception:
             self._port = None
+            self.enabled = False
             raise
+
+    @staticmethod
+    def _open_named(name: str) -> Any:
+        """
+        Try a virtual port first (macOS/Linux). If that fails — usual on
+        Windows — open the same name as a normal output (loopMIDI / hardware).
+        """
+        try:
+            return mido.open_output(name, virtual=True)
+        except Exception:
+            try:
+                return mido.open_output(name)
+            except Exception as exc:
+                raise RuntimeError(
+                    f"could not open {name!r} — on Windows create that name in loopMIDI"
+                ) from exc
 
     def configure(self, port_name: str, enabled: bool) -> None:
         self.port_name = port_name
