@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections import deque
 from dataclasses import dataclass, field
 
+import numpy as np
+
 from music_analyse import config
 from music_analyse.audio.analysis import RawFrame
 from music_analyse.banks import BankParams, default_banks, ensure_four
@@ -55,7 +57,7 @@ class _FloatChannel:
 
 class Conditioner:
     """
-    Floats: raw → floor → adaptive normalize → clamp 0..1 → attack/release EMA → makeup
+    Floats: raw → gate → mix(absolute, slow level) → clamp 0..1 → attack/release EMA → makeup
     Triggers: rising-edge vs threshold + refractory (Tune-live)
 
     Kick is multi-gated and NOT derived from bass_energy alone.
@@ -92,10 +94,8 @@ class Conditioner:
     def apply_tune(self, tune: TuneParams) -> None:
         """Live-update dynamics / trigger knobs (no restart required)."""
         self.tune = tune.clamped()
-        # Amount also nudges effective norm window (higher amount → shorter window)
-        base_n = max(8, int(round(config.NORM_WINDOW_S / self.dt)))
-        scale = 1.35 - 0.55 * self.tune.amount  # amount 1 → ~0.8× window
-        window_n = max(8, int(round(base_n * scale)))
+        # Slow reference window (8–12 s). Amount only blends; it does not shorten.
+        window_n = max(8, int(round(config.NORM_WINDOW_S / self.dt)))
         for ch in self._channels.values():
             ch.resize(window_n)
 
@@ -118,8 +118,26 @@ class Conditioner:
         floats["bpm"] = float(raw.bpm)
 
         onset_e = floats["onset_strength"]
-        snare_e = min(1.0, onset_e * 0.45 + self._flux_norm(raw.snare_flux) * 0.9)
-        hihat_e = min(1.0, onset_e * 0.35 + self._flux_norm(raw.hihat_flux) * 0.95)
+        snare_e = self._drum_level(
+            raw.snare_flux,
+            raw.snare_attack,
+            config.SNARE_MIN_FLUX,
+            config.SNARE_MIN_ATTACK,
+            kick_shape=raw.kick_shape,
+            kick_flux=raw.kick_flux,
+            kind="snare",
+            kick_from_stem=raw.kick_from_stem,
+        )
+        hihat_e = self._drum_level(
+            raw.hihat_flux,
+            raw.hihat_attack,
+            config.HIHAT_MIN_FLUX,
+            config.HIHAT_MIN_ATTACK,
+            kick_shape=raw.kick_shape,
+            kick_flux=raw.kick_flux,
+            kind="hihat",
+            kick_from_stem=raw.kick_from_stem,
+        )
         beat_e = 1.0 if raw.beat_pulse else 0.0
 
         kick_score, kick_ok = self._kick_score(raw)
@@ -172,6 +190,12 @@ class Conditioner:
         # sensitivity high → slightly easier flux gate
         min_flux = max(0.08, min_flux)
 
+        # Stems: kick = drums-low bang. Mix-piano harmonicity must not veto.
+        if getattr(raw, "kick_from_stem", False):
+            gates_ok = flux >= min_flux and attack >= config.KICK_MIN_ATTACK
+            score = 0.55 * flux + 0.35 * attack + config.KICK_BEATER_WEIGHT * beater
+            return float(max(0.0, min(1.0, score))), gates_ok
+
         gates_ok = (
             flux >= min_flux
             and attack >= config.KICK_MIN_ATTACK
@@ -212,11 +236,19 @@ class Conditioner:
         ch = self._channels[key]
         x = max(0.0, raw - t.threshold)
         ch.history.append(x)
-        peak = max(ch.history) if ch.history else 0.0
-        adaptive = x / (peak + config.NORM_EPSILON)
-        adaptive = max(0.0, min(1.0, adaptive))
-        # Amount 0 → soft absolute scale; Amount 1 → full adaptive normalize
-        soft = max(0.0, min(1.0, x * 8.0))
+        if not ch.history:
+            ref = 0.0
+        elif len(ch.history) < 8:
+            ref = max(ch.history)
+        else:
+            ref = float(
+                np.percentile(
+                    np.asarray(ch.history, dtype=np.float64), config.NORM_PERCENTILE
+                )
+            )
+        adaptive = max(0.0, min(1.0, x / (ref + config.NORM_EPSILON)))
+        # Amount 0 = absolute unit dynamics; 1 = slow 80th-percentile level
+        soft = max(0.0, min(1.0, x))
         norm = (1.0 - t.amount) * soft + t.amount * adaptive
 
         if norm >= ch.smoothed:
@@ -231,6 +263,31 @@ class Conditioner:
     @staticmethod
     def _flux_norm(flux: float) -> float:
         return float(max(0.0, min(1.0, flux)))
+
+    def _drum_level(
+        self,
+        flux: float,
+        attack: float,
+        min_flux: float,
+        min_attack: float,
+        kick_shape: float,
+        kick_flux: float,
+        kind: str,
+        kick_from_stem: bool = False,
+    ) -> float:
+        """Own-band snare/hat level — no global onset mix (brief G)."""
+        flux = self._flux_norm(flux)
+        attack = self._flux_norm(attack)
+        if flux < min_flux or attack < min_attack:
+            return 0.0
+        # Kick-only loops: thud/click must not lift snare/hat to threshold
+        # (skip when Stems: kick_shape is forced 1.0 and is not mix-piano).
+        if not kick_from_stem:
+            if kind == "snare" and kick_shape >= 0.58:
+                return 0.0
+            if kind == "hihat" and (kick_shape >= 0.65 or flux < kick_flux * 1.25):
+                return 0.0
+        return float(min(1.0, 0.62 * flux + 0.38 * attack))
 
     def _bang(self, name: str, level: float, force_pulse: bool = False) -> bool:
         scale = sensitivity_to_scale(self.tune.sensitivity)

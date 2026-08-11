@@ -1,5 +1,5 @@
 ---
-status: Approved
+status: Implemented
 type: update
 from: Designer agent
 to: Programming agent
@@ -153,4 +153,8 @@ User keeps **Live** for shows (current delay). For studio / tough mixes they swi
 
 ## Implemented (Programming agent — fill in)
 
-_Pending._
+- Transport: **Live | Pro** (default Live, accent on active). Pro-only look-ahead **60 / 120 / 200 ms** (default 120) + muted hint `+N ms · more accurate`.
+- Live path unchanged: `Analyser` 512 FFT, no look-ahead.
+- Pro: `ProAnalyser` (`n_fft` 2048, hop 512), cheap median HPSS every N hops (perc drums / harm vocal; librosa `hpss` skipped — hop overrun). `beat_track` on 8 s buffer ~1 s in a background thread. `TriggerLookahead` delays **triggers only** (local peak + decay confirm). Floats stream every hop.
+- Mode switch swaps analyser and auto-restarts if running (`switching`). Look-ahead updates live. OSC 0/1 pulse + addresses unchanged.
+- README: Live vs Pro trade. Config: `MODE_DEFAULT`, `PRO_LOOKAHEAD_MS`, `PRO_N_FFT`, `PRO_HOP`, `PRO_BEAT_BUFFER_S`.

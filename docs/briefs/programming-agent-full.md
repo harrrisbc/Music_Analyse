@@ -15,6 +15,10 @@ updates:
   - docs/briefs/programming-agent-update-user-banks.md
   - docs/briefs/programming-agent-update-scope.md
   - docs/briefs/programming-agent-update-pro-mode.md
+  - docs/briefs/programming-agent-update-accuracy-audit.md
+  - docs/briefs/programming-agent-update-tap-tempo.md
+  - docs/briefs/programming-agent-update-extractors.md
+  - docs/briefs/programming-agent-update-session-show.md
 ---
 
 # Programming brief — Full (Python-only UI)
@@ -28,6 +32,10 @@ This is the **single source of truth** for the baseline app. Older Day 1 briefs 
 - [`programming-agent-update-user-banks.md`](./programming-agent-update-user-banks.md) — 4 user Hz/threshold banks → extra OSC floats/triggers
 - [`programming-agent-update-scope.md`](./programming-agent-update-scope.md) — 3s heartbeat scope (default vocal)
 - [`programming-agent-update-pro-mode.md`](./programming-agent-update-pro-mode.md) — Live vs Pro (look-ahead accuracy)
+- [`programming-agent-update-accuracy-audit.md`](./programming-agent-update-accuracy-audit.md) — code-level accuracy bottlenecks (A–L) and fixes
+- [`programming-agent-update-tap-tempo.md`](./programming-agent-update-tap-tempo.md) — user TAP button sets BPM + beat phase
+- [`programming-agent-update-extractors.md`](./programming-agent-update-extractors.md) — Filters (IIR) + Stems, both in Live and Pro
+- [`programming-agent-update-session-show.md`](./programming-agent-update-session-show.md) — last-used → named Session → Show view
 
 **Critical UI change:** replace the **Gradio / HTML server** control panel with a **native Python GUI only**. No local web server for the app UI.
 

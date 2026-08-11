@@ -12,8 +12,8 @@ class TuneParams:
     """UI-facing Tune knobs (compressor-like floats + trigger feel)."""
 
     # Floats dynamics
-    threshold: float = config.NOISE_FLOOR  # 0–0.1 noise floor / gate
-    amount: float = 1.0  # 0–1 adaptive-norm strength
+    threshold: float = config.NOISE_FLOOR  # 0–THRESHOLD_MAX unit-scale gate
+    amount: float = config.AMOUNT_DEFAULT  # 0 = full dynamics, 1 = slow level
     attack_s: float = config.ATTACK_S  # 0.005–0.1
     release_s: float = config.RELEASE_S  # 0.05–1.0
     makeup: float = 1.0  # 0.5–2.0 post gain then clamp
@@ -25,7 +25,7 @@ class TuneParams:
 
     def clamped(self) -> TuneParams:
         return TuneParams(
-            threshold=float(max(0.0, min(0.1, self.threshold))),
+            threshold=float(max(0.0, min(config.THRESHOLD_MAX, self.threshold))),
             amount=float(max(0.0, min(1.0, self.amount))),
             attack_s=float(max(0.005, min(0.1, self.attack_s))),
             release_s=float(max(0.05, min(1.0, self.release_s))),
@@ -38,12 +38,36 @@ class TuneParams:
     def to_dict(self) -> dict:
         return asdict(self.clamped())
 
+    @classmethod
+    def from_dict(cls, data: dict | None) -> TuneParams:
+        base = preset_normal()
+        if not isinstance(data, dict):
+            return base.clamped()
+        kwargs: dict = {}
+        for key in (
+            "threshold",
+            "amount",
+            "attack_s",
+            "release_s",
+            "makeup",
+            "sensitivity",
+            "hold_ms",
+            "kick_strictness",
+        ):
+            if key not in data:
+                continue
+            try:
+                kwargs[key] = float(data[key])
+            except (TypeError, ValueError):
+                continue
+        return replace(base, **kwargs).clamped()
+
 
 def preset_normal() -> TuneParams:
-    """Match shipped conditioner / kick defaults."""
+    """Phrase dynamics on; light leveling (not a broadcast limiter)."""
     return TuneParams(
         threshold=config.NOISE_FLOOR,
-        amount=1.0,
+        amount=config.AMOUNT_DEFAULT,
         attack_s=config.ATTACK_S,
         release_s=config.RELEASE_S,
         makeup=1.0,
@@ -55,8 +79,8 @@ def preset_normal() -> TuneParams:
 
 def preset_gentle() -> TuneParams:
     return TuneParams(
-        threshold=0.03,
-        amount=0.65,
+        threshold=0.06,
+        amount=0.20,
         attack_s=0.06,
         release_s=0.45,
         makeup=0.95,
@@ -68,8 +92,8 @@ def preset_gentle() -> TuneParams:
 
 def preset_tight() -> TuneParams:
     return TuneParams(
-        threshold=0.005,
-        amount=1.0,
+        threshold=0.02,
+        amount=0.55,
         attack_s=0.012,
         release_s=0.10,
         makeup=1.1,
@@ -80,11 +104,11 @@ def preset_tight() -> TuneParams:
 
 
 def preset_kick_safe() -> TuneParams:
-    """Normal-ish floats + high kick strictness + slightly fewer kicks."""
+    """Calmer floats + high kick strictness + slightly fewer kicks."""
     return replace(
         preset_gentle(),
-        threshold=0.02,
-        amount=0.9,
+        threshold=0.04,
+        amount=0.30,
         attack_s=0.035,
         release_s=0.28,
         makeup=1.0,

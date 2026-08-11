@@ -29,6 +29,43 @@ class BankParams:
     def valid(self) -> bool:
         return self.hi_hz > self.lo_hz
 
+    def to_dict(self) -> dict:
+        b = self.clamped()
+        return {
+            "index": b.index,
+            "enabled": b.enabled,
+            "name": b.name,
+            "lo_hz": b.lo_hz,
+            "hi_hz": b.hi_hz,
+            "threshold": b.threshold,
+        }
+
+    @classmethod
+    def from_dict(cls, data: object) -> BankParams | None:
+        if not isinstance(data, dict):
+            return None
+        try:
+            index = int(data.get("index", 0))
+        except (TypeError, ValueError):
+            return None
+        if index < 1 or index > 4:
+            return None
+
+        def _float(key: str, fallback: float) -> float:
+            try:
+                return float(data.get(key, fallback))
+            except (TypeError, ValueError):
+                return fallback
+
+        return BankParams(
+            index=index,
+            enabled=bool(data.get("enabled", True)),
+            name=str(data.get("name") or f"Bank {index}"),
+            lo_hz=_float("lo_hz", 40.0),
+            hi_hz=_float("hi_hz", 120.0),
+            threshold=_float("threshold", 0.55),
+        ).clamped()
+
     def clamped(self) -> BankParams:
         lo = float(max(HZ_MIN, min(HZ_MAX, self.lo_hz)))
         hi = float(max(HZ_MIN, min(HZ_MAX, self.hi_hz)))
