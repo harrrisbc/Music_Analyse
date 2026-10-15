@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "source": {
+    "audio_path": "samples/mix.wav",
+    "drums_stem_path": "work/drums.wav",
+    "duration_sec": 8.0,
+    "sample_rate": 44100
+  },
+  "detection": {
+    "profile": "default",
+    "locked": false,
+    "notes": "Example only — run pipeline on your own WAV"
+  },
+  "cues": [
+    { "time": 0.0, "type": "kick", "velocity": 0.92, "bar": 1 },
+    { "time": 0.5, "type": "snare", "velocity": 0.78, "bar": 1 },
+    { "time": 1.0, "type": "kick", "velocity": 0.88, "bar": 2 },
+    { "time": 1.5, "type": "snare", "velocity": 0.81, "bar": 2 }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "source": {
+    "audio_path": "path/to/mix.wav",
+    "drums_stem_path": "path/to/drums.wav",
+    "duration_sec": 0.0,
+    "sample_rate": 44100
+  },
+  "detection": {
+    "profile": "default",
+    "locked": false
+  },
+  "cues": []
+}
