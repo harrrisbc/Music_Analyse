@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "haris-music-analyser"
+version = "1.0.0"
+description = "Offline kick/snare cue pipeline with Demucs separation and OSC playback for TouchDesigner / Unreal"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Haris Wong" }]
+dependencies = [
+  "numpy>=2.0",
+  "scipy>=1.11",
+  "librosa>=0.10",
+  "soundfile>=0.12",
+  "sounddevice>=0.4",
+  "python-osc>=1.8",
+  "mido>=1.3",
+  "PyYAML>=6.0",
+  "demucs>=4.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+
+[project.scripts]
+hma = "haris_music_analyser.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+haris_music_analyser = ["profiles/*.yaml"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

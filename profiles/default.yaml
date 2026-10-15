@@ -1,0 +1,20 @@
+# Default detection profile (v1). Copy per song when tuning.
+onset:
+  delta: 0.07          # higher = fewer onsets
+  wait: 4
+  min_interval_sec: 0.045
+
+classification:
+  kick_centroid_max_hz: 450
+  snare_centroid_min_hz: 900
+  kick_low_ratio_min: 0.55
+  snare_mid_ratio_min: 0.35
+
+velocity:
+  onset_strength_floor: 0.15
+  onset_strength_ceil: 2.5
+
+playback:
+  osc_kick_address: "/music/kick"
+  osc_snare_address: "/music/snare"
+  osc_port: 9000
